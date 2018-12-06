@@ -4,73 +4,63 @@ Created on Sun Dec  2 22:33:22 2018
 
 @author: andreameraner
 """
-from urllib.request import urlopen
-import requests
+#from urllib.request import urlopen
+#import requests
+import numpy as np
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from lxml import etree
 
+options = webdriver.ChromeOptions()
 
-
-def read_webpage(day, month, year, min_mag):
+class GrowingList(list):
+    def __setitem__(self, index, value):
+        if index >= len(self):
+            self.extend([None]*(index + 1 - len(self)))
+        list.__setitem__(self, index, value)
+        
+def read_webpage(day, month, year, max_mag):
     
-    #link = "https://in-the-sky.org/satpasses.php?day=2&month=12&year=2018&mag=5&anysat=v0&group=1&s="
-    #link = "https://www.heavens-above.com/AllSats.aspx?lat=48.1495&lng=11.5673&loc=80333+Monaco+di+Baviera%2c+Germania&alt=516&tz=CET&cul=en"
-    #webpage = urlopen(link)
-    
-#    #return webpage.read()
-#    # the target we want to open     
-    url='https://in-the-sky.org/satpasses.php?day=2&month=12&year=2018&mag=5&anysat=v0&group=1&s='
-#      
-#    #open with GET method 
-#    resp=requests.get(url) 
-#      
-#    #http_respone 200 means OK status 
-#    if resp.status_code==200: 
-#        print("Successfully opened the web page") 
-#        print("The news are as follow :-\n") 
-#      
-#        # we need a parser,Python built-in HTML parser is enough . 
-#        soup=BeautifulSoup(resp.text,'html.parser')     
-#  
-#        # l is the list which contains all the text i.e news  
-#        lll=soup.find("div",{"class":"mainpage container"}) 
-#      
-#        #now we want to print only the text part of the anchor. 
-#        #find all the elements of a, i.e anchor 
-#        for i in lll.findAll("a"): 
-#            print(i.text) 
-#    else: 
-#        print("Error")
-#        
-#    return
+    url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s='
+    print(url)
+    options.add_argument('headless')
+    options.add_argument('window-size=1200x600')
     path_to_chrome_driver=r"C:\Users\andreameraner\dev\chromedriver.exe"
-    browser = webdriver.Chrome(path_to_chrome_driver)
+    browser = webdriver.Chrome(path_to_chrome_driver,options=options)
     browser.get(url)
+    
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
     #print(soup)
-    a = soup.find_all('tr')
-    print(a)
     
-    return
+    passes_table = soup.find_all('tbody')[1]
+
+    passes_info=list()
+    for row_content in passes_table.find_all('tr'):
+        new_row = [None]*15 #initialize None row, robust to missing values
+        for col_n, col_content in enumerate(row_content.find_all('td')):
+            new_row[col_n] = col_content.get_text()
+        passes_info.append(new_row)
+        
+    return np.asarray(passes_info)
     
 
 
 if __name__ == '__main__':
     
-    day = 2
+    day = 7
     month = 12
     year = 2018
 
-    min_mag = 3
+    max_mag = 3
 
     start_time_hour = 18
     start_time_min = 00
     stop_time_hour = 23
     stop_time_min = 59
     
-    webpage_content = read_webpage(day, month, year, min_mag)
-    print(webpage_content)
+    passes_info = read_webpage(str(day), str(month), str(year), str(max_mag))
+    print(passes_info)
     
     
     
