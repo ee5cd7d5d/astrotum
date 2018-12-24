@@ -12,6 +12,7 @@ from selenium import webdriver
 import csv
 import urllib
 import re
+import os
 from tqdm import tqdm
 import argparse
 
@@ -22,10 +23,15 @@ def get_browser(path_to_chromedriver, show_webpage):
         options.add_argument('headless') #makes it invisible. Comment to see webpage displayed
     options.add_argument('window-size=1200x600')
     options.add_argument('log-level=3')
-    
-    path_to_chrome_driver=r"chromedriver.exe"
+
+    if os.name == 'nt':
+        path_to_chrome_driver=r"chromedriver.exe"
+    elif os.name == 'posix':
+        path_to_chrome_driver=r"./chromedriver"
+    else:
+        raise OSError('OS Not recognized')
     print("Opening Chrome webdriver")
-    browser = webdriver.Chrome(path_to_chrome_driver,options=options)
+    browser = webdriver.Chrome(path_to_chrome_driver, options=options)
     
     return browser
         
