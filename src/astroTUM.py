@@ -14,6 +14,11 @@ def load_fits(path : str):
     '''Load fits file from given path'''
     return aio.fits.open(path)[0]
 
+def write_fits(path : str, fits):
+    '''Write fits to specified path'''
+    nd.fits_ccddata_writer(fits, path)
+
+
 def mean_from_folder(path : str, image_base=None) -> np.ndarray:
     fits_list = sorted([x for x in os.listdir(path) if x.lower().endswith('.fits')])
     master_key = fits_list[0]
