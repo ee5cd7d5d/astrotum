@@ -1,4 +1,6 @@
 import os
+import argparse
+
 import astropy.nddata as nd
 import astropy.io as aio
 import scipy.signal as signal
@@ -71,13 +73,13 @@ def cut_fits(fits, x_offset, y_offset, width, height):
     return fits
 
 
+
 #root_dir = '/home/pedro/Projects/PYTHON/astro/18_10_17/'
 #root_ccd = process_root(root_dir)
 
-root_dir = '/home/pedro/Projects/PYTHON/astro/18_10_17/moon_fast/'
-root_ccd = nd.CCDData(data=mean_from_folder(os.path.join(root_dir, 'Light')), unit="adu")
-nd.fits_ccddata_writer(root_ccd, os.path.join(root_dir, "processed.fits"))
-
+# root_dir = '/home/pedro/Projects/PYTHON/astro/18_10_17/moon_fast/'
+# root_ccd = nd.CCDData(data=mean_from_folder(os.path.join(root_dir, 'Light')), unit="adu")
+# nd.fits_ccddata_writer(root_ccd, os.path.join(root_dir, "processed.fits"))
 
 #nebula = nd.Cutout2D(nebula_ccd, (950, 1500), (300, 300))
 

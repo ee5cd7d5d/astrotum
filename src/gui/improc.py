@@ -1,6 +1,9 @@
 from tkinter import Tk, Label, Button, Text, filedialog, END
+import sys
+sys.path.append("..")
+import astroTUM as atum
 
-class MyFirstGUI:
+class GUI:
     def __init__(self, master):
         self.master = master
         master.title("A simple GUI")
@@ -98,6 +101,7 @@ class MyFirstGUI:
         self.text2.delete(1.0, END)
         self.text2.insert(END, self.communicator['output_path'])
 
-root = Tk()
-my_gui = MyFirstGUI(root)
-root.mainloop()
+def main():
+    root = Tk()
+    my_gui = GUI(root)
+    root.mainloop()
