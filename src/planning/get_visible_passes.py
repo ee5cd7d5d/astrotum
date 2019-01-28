@@ -4,8 +4,7 @@ Created on Sun Dec  2 22:33:22 2018
 
 @author: andreameraner
 """
-#from urllib.request import urlopen
-#import requests
+
 import numpy as np
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -15,9 +14,9 @@ import re
 import os
 from tqdm import tqdm
 import argparse
+import time
 
-
-def get_browser(path_to_chromedriver, show_webpage):
+def get_browser(show_webpage):
     options = webdriver.ChromeOptions()
     if not show_webpage:
         options.add_argument('headless') #makes it invisible. Comment to see webpage displayed
@@ -25,8 +24,10 @@ def get_browser(path_to_chromedriver, show_webpage):
     options.add_argument('log-level=3')
 
     if os.name == 'nt':
+        print('Windows Chromedriver selected')
         path_to_chrome_driver=r"chromedriver.exe"
     elif os.name == 'posix':
+        print('Linux Chromedriver selected')
         path_to_chrome_driver=r"./chromedriver"
     else:
         raise OSError('OS Not recognized')
@@ -34,23 +35,22 @@ def get_browser(path_to_chromedriver, show_webpage):
     browser = webdriver.Chrome(path_to_chrome_driver, options=options)
     
     return browser
-        
+
+
 def get_passes_info_table(day, month, year, max_mag, show_webpage):
     
     url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s='
     print("Getting pass information from: ",url)
+
+    browser = get_browser(show_webpage)
     
-    path_to_chrome_driver=r"chromedriver.exe"
-    browser = get_browser(path_to_chrome_driver, show_webpage)
-    
-    print("Waiting for webpage to open")
+    print("Waiting for webpage to load")
     browser.get(url)
     
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
     #print(soup)
     print("Webpage opened and read, now getting table")
-    
 
     passes_table = soup.find_all('tbody')[1]
     #print(passes_table)
@@ -98,26 +98,33 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
     
     celestrak_baseurl = 'http://celestrak.com/cgi-bin/TLE.pl?CATNR='
     tles_filename = year + month + day + "passes_maxmag" + max_mag + "_TLE.txt"
-    
-    print("Searching and writing TLEs")
-    f=open(tles_filename, "w+")
+
+    norad_id_list = passes_info_table[:,16]
+    seen = set()
+    uniq_ids = [str(x) for x in norad_id_list if x not in seen and not seen.add(x)]
+    print('Number of unique NORAD IDs found: ', len(uniq_ids))
+
+    print("Downloading and writing TLEs")
+    f = open(tles_filename, "w+")
     if progress_bar == True:
-        iterate = tqdm(range(len(passes_info_table)))
+        iterate = tqdm(uniq_ids)
     else:
-        iterate = range(len(passes_info_table))
-    for vis_pass in iterate:
-        
-        url = celestrak_baseurl + passes_info_table[vis_pass][16]
+        iterate = uniq_ids
+
+    for norad_id in iterate:
+
+        url = celestrak_baseurl + norad_id
         with urllib.request.urlopen(url) as celestrakpage:
             tle = celestrakpage.read()
             
         tlesoup = BeautifulSoup(tle,features="lxml")
         tletext = tlesoup.get_text()
-        tletextstart = tletext.find("\n\r\n")+3
+        tletextstart = tletext.find("\n\r\n")+3 #find start of tle (ignore name)
         f.write(tlesoup.get_text()[tletextstart:tletextstart+170])
         
     f.close()
     print("Wrote all passes TLEs to: ", tles_filename)
+
     return
 
 
@@ -133,11 +140,15 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    
+    start = time.time()
+    print('Starting download at', time.ctime())
+
     passes_info_table = get_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), args.show_webpage)
-    #print(passes_info)
+
     save_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table) 
-    get_TLEs(str(args.day), str(args.month), str(args.year), str(args.max_mag),passes_info_table, args.show_progressbar)
+    get_TLEs(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table, args.show_progressbar)
     
     print("\n\nSUCCESS\n\n")
+    print('Elapsed time: ', time.time() - start)
+    print('Ending time: ', time.ctime())
     
