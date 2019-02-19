@@ -6,14 +6,14 @@
 # -----------------------------------------------------------------------------
 # Inputs:
 # - task 1
-Mmax=-5     # magnitude of selected object
+Mmax=15     # magnitude of selected object
 tmin=0      # min and max exposure time
-tmax=0.005
+tmax=300
 g=1.4       # GAIN of the camera (to be verified)
             # defined as e-/DN (sometimes computed as Fullwell/res)
 #
 # - task 2
-TEXP = 1.0   # Fixed Exposure time (sec)
+TEXP = 30.0   # Fixed Exposure time (sec)
 minMag=-5   # min and max magnitude range
 maxMag=25
 #
@@ -72,7 +72,7 @@ QE_440=0.4
 QE_720=0.4
 
 Fullwell=25500
-res=(2^16) #Resolution :16 bits
+res=(2**16) #Resolution :16 bits
 #g= 1.4   # Gain defined as e-/DN (sometimes computed as Fullwell/res)
 Ppx=0.4 #typical value ( not from spec.)
 Npixel= 3326*2504 #Number of Pixels
