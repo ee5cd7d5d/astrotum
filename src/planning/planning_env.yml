@@ -1,0 +1,7 @@
+name: planning_env
+dependencies:
+- numpy
+- beautifulsoup4
+- selenium
+- tqdm
+- lxml
