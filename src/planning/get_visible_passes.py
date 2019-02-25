@@ -37,7 +37,14 @@ def get_browser(show_webpage):
     return browser
 
 
-def get_passes_info_table(day, month, year, max_mag, show_webpage):
+def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
+
+    if int(max_mag_input)>5:
+        print("Maximum magnitude is bigger than 5. Retrieving all visible passes first and filter later.")
+        max_mag = str(500)
+    else:
+        max_mag = max_mag_input
+
     
     url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s='
     print("Getting pass information from: ",url)
@@ -57,7 +64,8 @@ def get_passes_info_table(day, month, year, max_mag, show_webpage):
     
     passes_info=list()
     for row_content in passes_table.find_all('tr'):
-        new_row = [None]*17 
+        new_row = [None]*17
+        disregard_line = False
         for col_n, col_content in enumerate(row_content.find_all('td')):
             new_row[col_n] = col_content.get_text()
             if col_n == 0:
@@ -67,7 +75,25 @@ def get_passes_info_table(day, month, year, max_mag, show_webpage):
                 link = col_content.find('a')
                 new_row[14] = link.get('href')
                 new_row[16] = re.sub("[^0-9]", "",new_row[14][-5:])
-        passes_info.append(new_row)
+            if col_n == 9:
+                try: #check if mag is a number
+                    mag = int(new_row[col_n])
+                except:
+                    try: #extract number and disregard question mark
+                        mag = int(re.search(r'\d+', new_row[col_n]).group())
+                    except: #catch missing number
+                        disregard_line = True
+                        continue
+
+                if mag>int(max_mag_input):
+                    disregard_line = True
+                    continue
+                else:
+                    new_row[col_n] = mag
+
+        if not disregard_line:
+            passes_info.append(new_row)
+
     
     location = soup.find_all('p', attrs={'centretext'})[0]
     location = location.find('b').get_text()
@@ -117,7 +143,7 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
         with urllib.request.urlopen(url) as celestrakpage:
             tle = celestrakpage.read()
             
-        tlesoup = BeautifulSoup(tle,features="lxml")
+        tlesoup = BeautifulSoup(tle, features="lxml")
         tletext = tlesoup.get_text()
         tletextstart = tletext.find("\n\r\n")+3 #find start of tle (ignore name)
         f.write(tlesoup.get_text()[tletextstart:tletextstart+170])
