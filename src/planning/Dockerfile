@@ -8,8 +8,8 @@ FROM selenium/standalone-chrome
 # Copy conda env from stage 1
 COPY --from=0 /opt/conda /opt/conda
 # Create app
-WORKDIR /
-COPY . /
+WORKDIR /app
+COPY . /app
 # Add environment to path
 ENV PATH /opt/conda/envs/planning_env/bin:$PATH
 EXPOSE 80
