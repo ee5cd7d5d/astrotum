@@ -1,4 +1,9 @@
- ### Install environment 
+### Requirements
+
+- Anaconda
+- Chrome/Chromium
+
+### Install environment 
    
    ```sh
 conda env create -f planning_env.yml
