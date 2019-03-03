@@ -9,12 +9,13 @@ import numpy as np
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import csv
-import urllib
+import urllib.request
 import re
 import os
 from tqdm import tqdm
 import argparse
 import time
+import datetime
 
 def get_browser(show_webpage):
     options = webdriver.ChromeOptions()
@@ -155,11 +156,14 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
 
 
 if __name__ == '__main__':
+
+
+    now = datetime.datetime.now()
     
     parser = argparse.ArgumentParser(description='Get visible passes information')
-    parser.add_argument('--day', action='store', dest='day', help='Day of observation')
-    parser.add_argument('--month', action='store', dest='month', help='Month of observation')
-    parser.add_argument('--year', action='store', dest='year', help='Year of observation')
+    parser.add_argument('--day', action='store', dest='day', default=now.day, help='Day of observation')
+    parser.add_argument('--month', action='store', dest='month',default=now.month, help='Month of observation')
+    parser.add_argument('--year', action='store', dest='year',default=now.year, help='Year of observation')
     parser.add_argument('--max_mag', action='store', dest='max_mag', default=500, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
     parser.add_argument('--silent_webpage', action='store_false', dest='show_webpage', default=False, help='Show opened webpage in browser')
     parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=True, help='Show progress bar when loading TLEs')
@@ -168,10 +172,11 @@ if __name__ == '__main__':
 
     start = time.time()
     print('Starting download at', time.ctime())
+    print('Retrieving passes for %d/%d/%d:' % (args.day, args.month, args.year))
 
     passes_info_table = get_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), args.show_webpage)
 
-    save_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table) 
+    save_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table)
     get_TLEs(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table, args.show_progressbar)
     
     print("\n\nSUCCESS\n\n")
