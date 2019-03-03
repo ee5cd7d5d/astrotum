@@ -195,6 +195,9 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
 
     return
 
+def date_str(nr):
+    return str(nr).zfill(2)
+
 
 if __name__ == '__main__':
 
@@ -207,7 +210,7 @@ if __name__ == '__main__':
     parser.add_argument('--year', action='store', dest='year',default=now.year, help='Year of observation')
     parser.add_argument('--max_mag', action='store', dest='max_mag', default=5, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
     parser.add_argument('--silent_webpage', action='store_false', dest='show_webpage', default=False, help='Show opened webpage in browser')
-    parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=True, help='Show progress bar when loading TLEs')
+    parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=False, help='Show progress bar when loading TLEs')
 
     args = parser.parse_args()
 
@@ -215,10 +218,10 @@ if __name__ == '__main__':
     print('Retrieving passes for the night of %d/%d/%d:' % (args.day, args.month, args.year))
     print('Starting download at', time.ctime())
 
-    passes_info_table = get_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), args.show_webpage)
+    passes_info_table = get_passes_info_table(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), args.show_webpage)
 
-    save_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table)
-    get_TLEs(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table, args.show_progressbar)
+    save_passes_info_table(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table)
+    get_TLEs(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table, args.show_progressbar)
     
     print("\n***********\nSUCCESS\n***********\n")
     print('Elapsed time: ', time.time() - start)
