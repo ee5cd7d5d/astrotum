@@ -14,7 +14,6 @@ First, open conda environment
 conda activate planning_env
 ```
 
-# Run code
 
 Full command:
 ```sh
@@ -31,6 +30,7 @@ python get_visible_passes.py
 The code downloads and processes the visible passes of the selected night (from midday of the selected day to midday of the next day). 
 
 ### Outputs
+
 
 
 ### Docker
