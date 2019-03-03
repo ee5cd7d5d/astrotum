@@ -17,6 +17,7 @@ import argparse
 import time
 import datetime
 
+
 def get_browser(show_webpage):
     options = webdriver.ChromeOptions()
     if not show_webpage:
@@ -38,34 +39,36 @@ def get_browser(show_webpage):
     return browser
 
 
-def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
+def get_table_from_site(day, month, year, max_mag, show_webpage):
 
-    if int(max_mag_input)>5:
-        print("Maximum magnitude is bigger than 5. Retrieving all visible passes first and filter later.")
-        max_mag = str(500)
-    else:
-        max_mag = max_mag_input
-
-    
-    url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s='
-    print("Getting pass information from: ",url)
+    url = 'https://in-the-sky.org/satpasses.php?day=' + day + '&month=' + month + '&year=' + year + '&mag=' + max_mag + '&anysat=v0&group=1&s='
+    print("Getting pass information from: ", url)
 
     browser = get_browser(show_webpage)
-    
+
     print("Waiting for webpage to load")
     browser.get(url)
-    
+
     html = browser.page_source
     soup = BeautifulSoup(html, 'html.parser')
-    #print(soup)
+    # print(soup)
     print("Webpage opened and read, now getting table")
 
     passes_table = soup.find_all('tbody')[1]
-    #print(passes_table)
-    
-    passes_info=list()
+    # print(passes_table)
+
+    location = soup.find_all('p', attrs={'centretext'})[0]
+    location = location.find('b').get_text()
+
+    return passes_table, location
+
+
+def read_passes_table_to_ndarray(passes_table, max_mag_input):
+
+    passes_info = list()
+
     for row_content in passes_table.find_all('tr'):
-        new_row = [None]*17
+        new_row = [None] * 17
         disregard_line = False
         for col_n, col_content in enumerate(row_content.find_all('td')):
             new_row[col_n] = col_content.get_text()
@@ -75,18 +78,18 @@ def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
             if col_n == 14:
                 link = col_content.find('a')
                 new_row[14] = link.get('href')
-                new_row[16] = re.sub("[^0-9]", "",new_row[14][-5:])
+                new_row[16] = re.sub("[^0-9]", "", new_row[14][-5:])
             if col_n == 9:
-                try: #check if mag is a number
+                try:  # check if mag is a number
                     mag = int(new_row[col_n])
                 except:
-                    try: #extract number and disregard question mark
+                    try:  # extract number and disregard question mark
                         mag = int(re.search(r'\d+', new_row[col_n]).group())
-                    except: #catch missing number
+                    except:  # catch missing number
                         disregard_line = True
                         continue
 
-                if mag>int(max_mag_input):
+                if mag > int(max_mag_input):
                     disregard_line = True
                     continue
                 else:
@@ -95,9 +98,46 @@ def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
         if not disregard_line:
             passes_info.append(new_row)
 
+    for vis_pass in passes_info:
+        del vis_pass[1]
+
+    return passes_info
+
+
+def get_next_day_date(day, month, year):
+    date = datetime.datetime(int(year), int(month), int(day))
+    date += datetime.timedelta(days=1)
+    return str(date.day), str(date.month), str(date.year)
+
+
+
+
+def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
+
+    if int(max_mag_input)>5:
+        print("Maximum magnitude is bigger than 5. Retrieving all visible passes first and filter later.")
+        max_mag = str(500)
+    else:
+        max_mag = max_mag_input
+
+
+    (passes_table, location) = get_table_from_site(day, month, year, max_mag, show_webpage)
+    passes_info = read_passes_table_to_ndarray(passes_table, max_mag_input)
+
+    # filter morning passes
+    passes_info = [vis_pass for vis_pass in passes_info if int(re.search(r'\d+', vis_pass[1]).group())>=12]
+
+
+    (day,month,year) = get_next_day_date(day,month,year)
+    (passes_table_nextday, location) = get_table_from_site(day, month, year, max_mag, show_webpage)
+    passes_info_nextday = read_passes_table_to_ndarray(passes_table_nextday, max_mag_input)
+
+    # filter evening passes
+    passes_info_nextday = [vis_pass for vis_pass in passes_info_nextday if int(re.search(r'\d+', vis_pass[1]).group()) < 12]
+
+
+    passes_info += passes_info_nextday
     
-    location = soup.find_all('p', attrs={'centretext'})[0]
-    location = location.find('b').get_text()
     
     print("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("Got pass information table!")
@@ -118,6 +158,7 @@ def save_passes_info_table(day, month, year, max_mag, passes_info_table):
     filenametxt = year + month + day + "passes_maxmag" + max_mag + ".txt"
     np.savetxt(filenametxt, passes_info_table, delimiter=" ", fmt='%s',)
     print("Wrote passes information to txt file: ", filenametxt)
+
     return
 
 
@@ -126,7 +167,7 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
     celestrak_baseurl = 'http://celestrak.com/cgi-bin/TLE.pl?CATNR='
     tles_filename = year + month + day + "passes_maxmag" + max_mag + "_TLE.txt"
 
-    norad_id_list = passes_info_table[:,16]
+    norad_id_list = passes_info_table[:,15]
     seen = set()
     uniq_ids = [str(x) for x in norad_id_list if x not in seen and not seen.add(x)]
     print('Number of unique NORAD IDs found: ', len(uniq_ids))
@@ -164,22 +205,22 @@ if __name__ == '__main__':
     parser.add_argument('--day', action='store', dest='day', default=now.day, help='Day of observation')
     parser.add_argument('--month', action='store', dest='month',default=now.month, help='Month of observation')
     parser.add_argument('--year', action='store', dest='year',default=now.year, help='Year of observation')
-    parser.add_argument('--max_mag', action='store', dest='max_mag', default=500, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
+    parser.add_argument('--max_mag', action='store', dest='max_mag', default=5, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
     parser.add_argument('--silent_webpage', action='store_false', dest='show_webpage', default=False, help='Show opened webpage in browser')
     parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=True, help='Show progress bar when loading TLEs')
 
     args = parser.parse_args()
 
     start = time.time()
+    print('Retrieving passes for the night of %d/%d/%d:' % (args.day, args.month, args.year))
     print('Starting download at', time.ctime())
-    print('Retrieving passes for %d/%d/%d:' % (args.day, args.month, args.year))
 
     passes_info_table = get_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), args.show_webpage)
 
     save_passes_info_table(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table)
     get_TLEs(str(args.day), str(args.month), str(args.year), str(args.max_mag), passes_info_table, args.show_progressbar)
     
-    print("\n\nSUCCESS\n\n")
+    print("\n***********\nSUCCESS\n***********\n")
     print('Elapsed time: ', time.time() - start)
     print('Ending time: ', time.ctime())
     
