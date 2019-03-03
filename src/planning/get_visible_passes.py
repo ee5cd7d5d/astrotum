@@ -110,8 +110,6 @@ def get_next_day_date(day, month, year):
     return str(date.day), str(date.month), str(date.year)
 
 
-
-
 def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
 
     if int(max_mag_input)>5:
@@ -138,7 +136,6 @@ def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
 
     passes_info += passes_info_nextday
     
-    
     print("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
     print("Got pass information table!")
     print("Location set to: ", location)
@@ -148,7 +145,7 @@ def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
     return np.asarray(passes_info)
 
 
-def save_passes_info_table(day, month, year, max_mag, passes_info_table):
+def save_passes_info_table(day, month, year, max_mag, passes_info_table, data_path):
 
     #add first explanatory line
     column_description = ['Object Name', 'Start Time', 'Start Dir', 'Start El', 'Start Magnitude', 'Highest Time', 'Highest Dir', 'Highest El', 'Highest Magnitude', 'End Time', 'End Dir', 'End El', 'End Magnitude','Pass Information', 'Object Information', 'Object ID']
@@ -156,21 +153,25 @@ def save_passes_info_table(day, month, year, max_mag, passes_info_table):
     passes_info_table = np.vstack([column_description,passes_info_table])
 
     filenamecsv = year + month + day + "passes_maxmag" + max_mag + ".csv"
+    filenamecsv = os.path.join(data_path,filenamecsv)
     with open(filenamecsv, 'w',newline='') as f:
         csv.writer(f, delimiter =';',).writerows(passes_info_table)
     print("Wrote passes information to csv file: ", filenamecsv)
     
     filenametxt = year + month + day + "passes_maxmag" + max_mag + ".txt"
+    filenametxt = os.path.join(data_path, filenametxt)
     np.savetxt(filenametxt, passes_info_table, delimiter=" ", fmt='%s',)
     print("Wrote passes information to txt file: ", filenametxt)
 
     return
 
 
-def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
+def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar, data_path):
     
     celestrak_baseurl = 'http://celestrak.com/cgi-bin/TLE.pl?CATNR='
+
     tles_filename = year + month + day + "passes_maxmag" + max_mag + "_TLE.txt"
+    tles_filename = os.path.join(data_path, tles_filename)
 
     norad_id_list = passes_info_table[:,15]
     seen = set()
@@ -219,14 +220,20 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    base_out_path = 'passes_data'
+    foldername =  date_str(args.year) + date_str(args.month) + date_str(args.day)
+    data_path = os.path.join(base_out_path, foldername)
+    if not os.path.isdir(data_path):
+        os.makedirs(data_path)
+
     start = time.time()
     print('Retrieving passes for the night of %d/%d/%d:' % (args.day, args.month, args.year))
     print('Starting download at', time.ctime())
 
     passes_info_table = get_passes_info_table(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), args.show_webpage)
 
-    save_passes_info_table(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table)
-    get_TLEs(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table, args.show_progressbar)
+    save_passes_info_table(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table, data_path)
+    get_TLEs(date_str(args.day), date_str(args.month), date_str(args.year), date_str(args.max_mag), passes_info_table, args.show_progressbar, data_path)
     
     print("\n***********\nSUCCESS\n***********\n")
     print('Elapsed time: ', time.time() - start)
