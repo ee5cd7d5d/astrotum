@@ -149,7 +149,12 @@ def get_passes_info_table(day, month, year, max_mag_input, show_webpage):
 
 
 def save_passes_info_table(day, month, year, max_mag, passes_info_table):
-    
+
+    #add first explanatory line
+    column_description = ['Object Name', 'Start Time', 'Start Dir', 'Start El', 'Start Magnitude', 'Highest Time', 'Highest Dir', 'Highest El', 'Highest Magnitude', 'End Time', 'End Dir', 'End El', 'End Magnitude','Pass Information', 'Object Information', 'Object ID']
+
+    passes_info_table = np.vstack([column_description,passes_info_table])
+
     filenamecsv = year + month + day + "passes_maxmag" + max_mag + ".csv"
     with open(filenamecsv, 'w',newline='') as f:
         csv.writer(f, delimiter =';',).writerows(passes_info_table)
@@ -195,12 +200,12 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
 
     return
 
+
 def date_str(nr):
     return str(nr).zfill(2)
 
 
 if __name__ == '__main__':
-
 
     now = datetime.datetime.now()
     
@@ -209,7 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--month', action='store', dest='month',default=now.month, help='Month of observation')
     parser.add_argument('--year', action='store', dest='year',default=now.year, help='Year of observation')
     parser.add_argument('--max_mag', action='store', dest='max_mag', default=5, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
-    parser.add_argument('--silent_webpage', action='store_false', dest='show_webpage', default=False, help='Show opened webpage in browser')
+    parser.add_argument('--show_webpage', action='store_true', dest='show_webpage', default=False, help='Show opened webpage in browser')
     parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=False, help='Show progress bar when loading TLEs')
 
     args = parser.parse_args()
