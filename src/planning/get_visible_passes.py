@@ -188,7 +188,7 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar, data_pa
         tlesoup = BeautifulSoup(tle, features="lxml")
         tletext = tlesoup.get_text()
         tletextstart = tletext.find("\n\r\n") + 3  # find start of tle (ignore name)
-        f.write(tlesoup.get_text()[tletextstart:tletextstart + 170])
+        f.write(tletext[tletextstart:tletextstart + 166]+'\n')
 
     f.close()
     print("Wrote all passes TLEs to: ", tles_filename)
@@ -232,7 +232,7 @@ def get_visible_passes_routine(day, month, year, max_mag=5, show_webpage=False, 
 
 
 if __name__ == '__main__':
-    
+
     now = datetime.datetime.now()
 
     parser = argparse.ArgumentParser(description='Get visible passes information')
