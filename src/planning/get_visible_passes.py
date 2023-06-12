@@ -9,12 +9,13 @@ import numpy as np
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import csv
-import urllib
+import urllib.request as request
 import re
 import os
 from tqdm import tqdm
 import argparse
 import time
+import datetime
 
 def get_browser(show_webpage):
     options = webdriver.ChromeOptions()
@@ -39,7 +40,7 @@ def get_browser(show_webpage):
 
 def get_passes_info_table(day, month, year, max_mag, show_webpage):
     
-    url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s='
+    url='https://in-the-sky.org/satpasses.php?day='+day+'&month='+month+'&year='+year+'&mag='+max_mag+'&anysat=v0&group=1&s=&gs=gs'
     print("Getting pass information from: ",url)
 
     browser = get_browser(show_webpage)
@@ -62,6 +63,8 @@ def get_passes_info_table(day, month, year, max_mag, show_webpage):
             new_row[col_n] = col_content.get_text()
             if col_n == 0:
                 link = col_content.find('a')
+                if link is None:
+                    a=1
                 new_row[15] = link.get('href')
             if col_n == 14:
                 link = col_content.find('a')
@@ -69,7 +72,7 @@ def get_passes_info_table(day, month, year, max_mag, show_webpage):
                 new_row[16] = re.sub("[^0-9]", "",new_row[14][-5:])
         passes_info.append(new_row)
     
-    location = soup.find_all('p', attrs={'centretext'})[0]
+    location = soup.find_all('p', attrs={'sidebarheading'})[0]
     location = location.find('b').get_text()
     
     print("\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
@@ -114,7 +117,7 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
     for norad_id in iterate:
 
         url = celestrak_baseurl + norad_id
-        with urllib.request.urlopen(url) as celestrakpage:
+        with request.urlopen(url, timeout=20) as celestrakpage:
             tle = celestrakpage.read()
             
         tlesoup = BeautifulSoup(tle,features="lxml")
@@ -129,12 +132,14 @@ def get_TLEs(day, month, year, max_mag, passes_info_table, progress_bar):
 
 
 if __name__ == '__main__':
+
+    today = datetime.date.today()
     
     parser = argparse.ArgumentParser(description='Get visible passes information')
-    parser.add_argument('--day', action='store', dest='day', help='Day of observation')
-    parser.add_argument('--month', action='store', dest='month', help='Month of observation')
-    parser.add_argument('--year', action='store', dest='year', help='Year of observation')
-    parser.add_argument('--max_mag', action='store', dest='max_mag', default=500, help='Maximum magnitude of objects. Set 500 for all illuminated objects')
+    parser.add_argument('--day', action='store', dest='day', default=today.day, help='Day of observation')
+    parser.add_argument('--month', action='store', dest='month', default=today.month, help='Month of observation')
+    parser.add_argument('--year', action='store', dest='year', default=today.year, help='Year of observation')
+    parser.add_argument('--max_mag', action='store', dest='max_mag', default=5, help='Maximum magnitude of objects. Default 5. Set 500 for all illuminated objects')
     parser.add_argument('--silent_webpage', action='store_false', dest='show_webpage', default=False, help='Show opened webpage in browser')
     parser.add_argument('--show_progressbar', action='store_true', dest='show_progressbar', default=True, help='Show progress bar when loading TLEs')
 
